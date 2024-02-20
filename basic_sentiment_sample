@@ -1,0 +1,37 @@
+# Importing necessary libraries
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report
+
+# Load the dataset
+data = pd.read_csv("sentiment_data.csv")
+
+# Preprocessing the text data
+# Assuming 'text' column contains the text data and 'label' column contains the sentiment label
+X = data['text']
+y = data['label']
+
+# Splitting the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Vectorizing the text data
+tfidf_vectorizer = TfidfVectorizer(max_features=5000)  # You can adjust the max_features parameter
+X_train_tfidf = tfidf_vectorizer.fit_transform(X_train)
+X_test_tfidf = tfidf_vectorizer.transform(X_test)
+
+# Training the Support Vector Machine (SVM) model
+svm_model = SVC(kernel='linear')  # Linear kernel is chosen, you can experiment with other kernels
+svm_model.fit(X_train_tfidf, y_train)
+
+# Making predictions on the test set
+y_pred = svm_model.predict(X_test_tfidf)
+
+# Evaluating the model
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+
+# Displaying classification report
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
