@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Crowdfunding {
+    address public creator;
+    uint public goal;
+    uint public deadline;
+    mapping(address => uint) public contributions;
+    uint public totalContributions;
+    bool public fundingGoalReached;
+    bool public fundingClosed;
+
+    modifier onlyCreator() {
+        require(msg.sender == creator, "Only creator can call this function");
+        _;
+    }
+
+    modifier afterDeadline() {
+        require(block.timestamp >= deadline, "Deadline has not been reached");
+        _;
+    }
+
+    event FundingReceived(address contributor, uint amount, uint totalContributions);
+    event CreatorPaid(address recipient, uint amount);
+
+    constructor(uint _goal, uint _durationDays) {
+        creator = msg.sender;
+        goal = _goal * 1 ether; // Convert ether to wei
+        deadline = block.timestamp + (_durationDays * 1 days);
+    }
+
+    function contribute() external payable {
+        require(!fundingClosed, "Funding is closed");
+        require(block.timestamp < deadline, "Deadline has passed");
+        
+        contributions[msg.sender] += msg.value;
+        totalContributions += msg.value;
+
+        emit FundingReceived(msg.sender, msg.value, totalContributions);
+
+        if (totalContributions >= goal) {
+            fundingGoalReached = true;
+        }
+    }
+
+    function withdrawFunds() external onlyCreator afterDeadline {
+        require(fundingGoalReached, "Funding goal not reached");
+        
+        uint amount = address(this).balance;
+        payable(creator).transfer(amount);
+
+        fundingClosed = true;
+
+        emit CreatorPaid(creator, amount);
+    }
+
+    function getRefund() external {
+        require(!fundingGoalReached, "Funding goal reached");
+        require(contributions[msg.sender] > 0, "No contributions found");
+        require(block.timestamp >= deadline, "Deadline has not been reached");
+
+        uint amount = contributions[msg.sender];
+        contributions[msg.sender] = 0;
+        totalContributions -= amount;
+
+        payable(msg.sender).transfer(amount);
+    }
+
+    function getCurrentTime() public view returns (uint) {
+        return block.timestamp;
+    }
+
+    function getRemainingTime() public view returns (uint) {
+        if (block.timestamp >= deadline) {
+            return 0;
+        } else {
+            return deadline - block.timestamp;
+        }
+    }
+}
