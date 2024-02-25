@@ -1,0 +1,85 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title ImageNFT
+ * @dev A contract that represents NFT images.
+ */
+contract ImageNFT is ERC721, Ownable {
+    using Strings for uint256;
+
+    // Base URI for metadata
+    string private _baseTokenURI;
+
+    // Token ID counter
+    uint256 private _tokenIdCounter;
+
+    // Mapping from token ID to image data URI
+    mapping(uint256 => string) private _tokenURIs;
+
+    /**
+     * @dev Constructor function
+     * @param name The name of the NFT token
+     * @param symbol The symbol of the NFT token
+     * @param baseTokenURI The base URI for the token metadata
+     */
+    constructor(
+        string memory name,
+        string memory symbol,
+        string memory baseTokenURI
+    ) ERC721(name, symbol) {
+        _baseTokenURI = baseTokenURI;
+    }
+
+    /**
+     * @dev Mint a new NFT with the given image data URI
+     * @param imageDataURI The data URI of the image
+     * @return tokenId The ID of the minted token
+     */
+    function mint(string memory imageDataURI) public onlyOwner returns (uint256 tokenId) {
+        _tokenIdCounter++;
+        tokenId = _tokenIdCounter;
+
+        _mint(msg.sender, tokenId);
+        _setTokenURI(tokenId, imageDataURI);
+
+        return tokenId;
+    }
+
+    /**
+     * @dev Set the base URI for the token metadata
+     * @param baseTokenURI The new base URI
+     */
+    function setBaseTokenURI(string memory baseTokenURI) public onlyOwner {
+        _baseTokenURI = baseTokenURI;
+    }
+
+    /**
+     * @dev Returns the base URI for the token metadata
+     */
+    function _baseURI() internal view override returns (string memory) {
+        return _baseTokenURI;
+    }
+
+    /**
+     * @dev Set the URI for the given token ID
+     * @param tokenId The ID of the token
+     * @param tokenURI The URI for the token
+     */
+    function _setTokenURI(uint256 tokenId, string memory tokenURI) internal {
+        require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
+        _tokenURIs[tokenId] = tokenURI;
+    }
+
+    /**
+     * @dev Returns the URI for the given token ID
+     * @param tokenId The ID of the token
+     */
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        return _tokenURIs[tokenId];
+    }
+}
